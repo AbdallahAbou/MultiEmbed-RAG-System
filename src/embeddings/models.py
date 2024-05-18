@@ -66,3 +66,54 @@ class SentenceTransformerModel(EmbeddingModel):
         if self._dimension is None:
             self.load()
         return self._dimension
+
+
+class AraBERTModel(EmbeddingModel):
+    """AraBERT-based embedding model for Arabic text."""
+    
+    def __init__(
+        self,
+        model_name: str = "aubmindlab/bert-base-arabertv2",
+        device: str = "cuda"
+    ):
+        super().__init__(model_name, device)
+        self._tokenizer = None
+        self._dimension = 768
+    
+    def load(self) -> None:
+        from transformers import AutoTokenizer, AutoModel
+        import torch
+        
+        self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self._model = AutoModel.from_pretrained(self.model_name)
+        self._model.to(self.device)
+        self._model.eval()
+    
+    def encode(self, texts: Union[str, List[str]]) -> np.ndarray:
+        import torch
+        
+        if self._model is None:
+            self.load()
+        
+        if isinstance(texts, str):
+            texts = [texts]
+        
+        inputs = self._tokenizer(
+            texts,
+            padding=True,
+            truncation=True,
+            max_length=512,
+            return_tensors="pt"
+        ).to(self.device)
+        
+        with torch.no_grad():
+            outputs = self._model(**inputs)
+            embeddings = outputs.last_hidden_state[:, 0, :].cpu().numpy()
+        
+        # Normalize
+        norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+        return embeddings / norms
+    
+    @property
+    def dimension(self) -> int:
+        return self._dimension
