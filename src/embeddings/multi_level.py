@@ -15,3 +15,23 @@ class EmbeddingLevel:
     embeddings: np.ndarray
     texts: List[str]
     metadata: List[Dict[str, Any]]
+
+
+class MultiLevelEmbedder:
+    """
+    Generate embeddings at multiple granularity levels:
+    - Document level: entire document
+    - Paragraph level: logical sections
+    - Sentence level: individual sentences
+    """
+    
+    def __init__(
+        self,
+        model: Optional[EmbeddingModel] = None,
+        chunk_size: int = 512,
+        chunk_overlap: int = 50
+    ):
+        self.model = model or SentenceTransformerModel()
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+        self._levels: Dict[str, EmbeddingLevel] = {}
