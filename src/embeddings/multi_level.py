@@ -35,3 +35,30 @@ class MultiLevelEmbedder:
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self._levels: Dict[str, EmbeddingLevel] = {}
+    
+    def _split_into_sentences(self, text: str) -> List[str]:
+        """Split text into sentences."""
+        import re
+        # Handle multiple sentence delimiters including Arabic
+        pattern = r'(?<=[.!?؟،])\s+'
+        sentences = re.split(pattern, text)
+        return [s.strip() for s in sentences if s.strip()]
+    
+    def _split_into_paragraphs(self, text: str) -> List[str]:
+        """Split text into paragraphs."""
+        paragraphs = text.split('\n\n')
+        return [p.strip() for p in paragraphs if p.strip()]
+    
+    def _chunk_text(self, text: str) -> List[str]:
+        """Split text into overlapping chunks."""
+        words = text.split()
+        chunks = []
+        
+        start = 0
+        while start < len(words):
+            end = start + self.chunk_size
+            chunk = ' '.join(words[start:end])
+            chunks.append(chunk)
+            start = end - self.chunk_overlap
+        
+        return chunks
