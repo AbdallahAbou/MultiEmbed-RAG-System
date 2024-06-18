@@ -62,3 +62,41 @@ class MultiLevelEmbedder:
             start = end - self.chunk_overlap
         
         return chunks
+    
+    def embed_document(
+        self,
+        text: str,
+        doc_id: str,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, EmbeddingLevel]:
+        """
+        Generate multi-level embeddings for a document.
+        """
+        metadata = metadata or {}
+        levels = {}
+        
+        # Document level
+        doc_embedding = self.model.encode(text)
+        levels['document'] = EmbeddingLevel(
+            name='document',
+            embeddings=doc_embedding,
+            texts=[text],
+            metadata=[{**metadata, 'doc_id': doc_id, 'level': 'document'}]
+        )
+        
+        # Paragraph level
+        paragraphs = self._split_into_paragraphs(text)
+        if paragraphs:
+            para_embeddings = self.model.encode(paragraphs)
+            para_metadata = [
+                {**metadata, 'doc_id': doc_id, 'level': 'paragraph', 'para_idx': i}
+                for i in range(len(paragraphs))
+            ]
+            levels['paragraph'] = EmbeddingLevel(
+                name='paragraph',
+                embeddings=para_embeddings,
+                texts=paragraphs,
+                metadata=para_metadata
+            )
+        
+        return levels
