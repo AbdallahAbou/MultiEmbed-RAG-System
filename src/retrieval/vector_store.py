@@ -63,3 +63,54 @@ class FAISSVectorStore(VectorStore):
             self._index = faiss.IndexHNSWFlat(self.dimension, 32)
         else:
             raise ValueError(f"Unknown index type: {self.index_type}")
+    
+    def add(
+        self,
+        embeddings: np.ndarray,
+        texts: List[str],
+        metadata: Optional[List[Dict[str, Any]]] = None
+    ) -> None:
+        """Add embeddings to the FAISS index."""
+        if embeddings.dtype != np.float32:
+            embeddings = embeddings.astype(np.float32)
+        
+        # Normalize for inner product similarity
+        faiss_module = __import__('faiss')
+        faiss_module.normalize_L2(embeddings)
+        
+        self._index.add(embeddings)
+        self._texts.extend(texts)
+        
+        if metadata:
+            self._metadata.extend(metadata)
+        else:
+            self._metadata.extend([{} for _ in texts])
+    
+    def search(
+        self,
+        query_embedding: np.ndarray,
+        top_k: int = 10
+    ) -> List[Tuple[int, float, str, Dict[str, Any]]]:
+        """Search for similar embeddings."""
+        if query_embedding.dtype != np.float32:
+            query_embedding = query_embedding.astype(np.float32)
+        
+        if query_embedding.ndim == 1:
+            query_embedding = query_embedding.reshape(1, -1)
+        
+        faiss_module = __import__('faiss')
+        faiss_module.normalize_L2(query_embedding)
+        
+        scores, indices = self._index.search(query_embedding, top_k)
+        
+        results = []
+        for idx, score in zip(indices[0], scores[0]):
+            if idx < len(self._texts):
+                results.append((
+                    int(idx),
+                    float(score),
+                    self._texts[idx],
+                    self._metadata[idx]
+                ))
+        
+        return results
