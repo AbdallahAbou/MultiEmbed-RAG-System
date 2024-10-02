@@ -71,3 +71,48 @@ class VLLMClient:
             finish_reason=choice.get("finish_reason", "unknown"),
             model=data.get("model", self.model)
         )
+    
+    def chat(
+        self,
+        messages: List[Dict[str, str]],
+        max_tokens: int = 512,
+        temperature: float = 0.7,
+        top_p: float = 0.9,
+        system_prompt: Optional[str] = None
+    ) -> LLMResponse:
+        """Generate chat completion."""
+        if system_prompt:
+            messages = [{"role": "system", "content": system_prompt}] + messages
+        
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "top_p": top_p
+        }
+        
+        response = self._client.post(
+            f"{self.base_url}/v1/chat/completions",
+            headers=self._build_headers(),
+            json=payload
+        )
+        response.raise_for_status()
+        
+        data = response.json()
+        choice = data["choices"][0]
+        
+        return LLMResponse(
+            text=choice["message"]["content"],
+            tokens_used=data.get("usage", {}).get("total_tokens", 0),
+            finish_reason=choice.get("finish_reason", "unknown"),
+            model=data.get("model", self.model)
+        )
+    
+    def health_check(self) -> bool:
+        """Check if vLLM server is healthy."""
+        try:
+            response = self._client.get(f"{self.base_url}/health")
+            return response.status_code == 200
+        except Exception:
+            return False
