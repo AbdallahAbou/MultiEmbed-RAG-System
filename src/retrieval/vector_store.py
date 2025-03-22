@@ -114,3 +114,37 @@ class FAISSVectorStore(VectorStore):
                 ))
         
         return results
+    
+    def save(self, path: str) -> None:
+        """Save the index and metadata to disk."""
+        import faiss
+        import json
+        
+        faiss.write_index(self._index, f"{path}.index")
+        
+        with open(f"{path}.meta.json", 'w') as f:
+            json.dump({
+                'texts': self._texts,
+                'metadata': self._metadata,
+                'dimension': self.dimension,
+                'index_type': self.index_type
+            }, f)
+    
+    def load(self, path: str) -> None:
+        """Load the index and metadata from disk."""
+        import faiss
+        import json
+        
+        self._index = faiss.read_index(f"{path}.index")
+        
+        with open(f"{path}.meta.json", 'r') as f:
+            data = json.load(f)
+            self._texts = data['texts']
+            self._metadata = data['metadata']
+            self.dimension = data['dimension']
+            self.index_type = data['index_type']
+    
+    @property
+    def size(self) -> int:
+        """Return number of vectors in the index."""
+        return self._index.ntotal
