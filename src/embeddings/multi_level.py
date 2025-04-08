@@ -100,3 +100,35 @@ class MultiLevelEmbedder:
             )
         
         return levels
+        
+        # Sentence level
+        sentences = self._split_into_sentences(text)
+        if sentences:
+            sent_embeddings = self.model.encode(sentences)
+            sent_metadata = [
+                {**metadata, 'doc_id': doc_id, 'level': 'sentence', 'sent_idx': i}
+                for i in range(len(sentences))
+            ]
+            levels['sentence'] = EmbeddingLevel(
+                name='sentence',
+                embeddings=sent_embeddings,
+                texts=sentences,
+                metadata=sent_metadata
+            )
+        
+        # Chunk level (for long documents)
+        chunks = self._chunk_text(text)
+        if len(chunks) > 1:
+            chunk_embeddings = self.model.encode(chunks)
+            chunk_metadata = [
+                {**metadata, 'doc_id': doc_id, 'level': 'chunk', 'chunk_idx': i}
+                for i in range(len(chunks))
+            ]
+            levels['chunk'] = EmbeddingLevel(
+                name='chunk',
+                embeddings=chunk_embeddings,
+                texts=chunks,
+                metadata=chunk_metadata
+            )
+        
+        return levels
