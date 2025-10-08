@@ -4,3 +4,12 @@ __pycache__/
 .venv/
 venv/
 *.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+models/
+*.index
+*.meta.json
