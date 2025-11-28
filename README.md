@@ -38,3 +38,35 @@ docker-compose up -d
 ## License
 
 MIT License
+
+## Usage
+
+### API Endpoints
+
+- `POST /ingest` - Ingest documents
+- `POST /query` - Query the RAG system
+- `GET /health` - Health check
+
+### Python SDK
+
+```python
+from src.embeddings import MultiLevelEmbedder
+from src.retrieval import FAISSVectorStore
+
+# Create embedder
+embedder = MultiLevelEmbedder()
+
+# Embed document
+levels = embedder.embed_document(
+    text="Your document text here",
+    doc_id="doc_001"
+)
+
+# Store embeddings
+store = FAISSVectorStore(dimension=embedder.model.dimension)
+store.add(
+    levels['sentence'].embeddings,
+    levels['sentence'].texts,
+    levels['sentence'].metadata
+)
+```
